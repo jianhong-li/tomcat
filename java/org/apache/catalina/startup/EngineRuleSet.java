@@ -80,6 +80,7 @@ public class EngineRuleSet extends RuleSetBase {
      */
     @Override
     public void addRuleInstances(Digester digester) {
+        System.out.println("EngineRuleSet - 准备添加 规则实例(RuleInstance)");
 
         digester.addObjectCreate(prefix + "Engine",
                                  "org.apache.catalina.core.StandardEngine",

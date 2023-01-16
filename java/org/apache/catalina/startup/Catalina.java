@@ -177,6 +177,7 @@ public class Catalina {
     }
 
     public void setServer(Server server) {
+        System.out.println("Catalina[" + this.getClass().getName() + "] Catalina 实例初始化 <--- setServer() (Server.xml解析完成 Server节点)");
         this.server = server;
     }
 
@@ -276,6 +277,9 @@ public class Catalina {
      * @return the main digester to parse server.xml
      */
     protected Digester createStartDigester() {
+
+        log.info("Catalina.createStartDigester: 创建启动 XML 解析器 - StartDigester");
+
         long t1=System.currentTimeMillis();
         // Initialize the digester
         Digester digester = new Digester();
@@ -296,7 +300,9 @@ public class Catalina {
         fakeAttributes.put(Connector.class, connectorAttrs);
         digester.setFakeAttributes(fakeAttributes);
         digester.setUseContextClassLoader(true);
-
+        log.info("Catalina.createStartDigester: "+ "digester.addObjectCreate(\"Server\"," +
+            "\"org.apache.catalina.core.StandardServer\"," +
+            "\"className\");");
         // Configure the actions we will be using
         digester.addObjectCreate("Server",
                                  "org.apache.catalina.core.StandardServer",
@@ -305,14 +311,14 @@ public class Catalina {
         digester.addSetNext("Server",
                             "setServer",
                             "org.apache.catalina.Server");
-
+        log.info("解析XML(Server.xml) - 创建全局J2EE企业命名上下文 - Server/GlobalNamingResources - org.apache.catalina.deploy.NamingResourcesImpl");
         digester.addObjectCreate("Server/GlobalNamingResources",
                                  "org.apache.catalina.deploy.NamingResourcesImpl");
         digester.addSetProperties("Server/GlobalNamingResources");
         digester.addSetNext("Server/GlobalNamingResources",
                             "setGlobalNamingResources",
                             "org.apache.catalina.deploy.NamingResourcesImpl");
-
+        log.info("解析XML(Server.xml) - 为Server添加生命周期监听器 - Server/Listener - (注: 类名必须由元素自己指定)");
         digester.addObjectCreate("Server/Listener",
                                  null, // MUST be specified in the element
                                  "className");
@@ -321,6 +327,7 @@ public class Catalina {
                             "addLifecycleListener",
                             "org.apache.catalina.LifecycleListener");
 
+        log.info("解析XML(Server.xml) - 为Server添加Service实例 - Server/Service - org.apache.catalina.core.StandardService");
         digester.addObjectCreate("Server/Service",
                                  "org.apache.catalina.core.StandardService",
                                  "className");
@@ -329,6 +336,7 @@ public class Catalina {
                             "addService",
                             "org.apache.catalina.Service");
 
+        log.info("解析XML(Server.xml) - 为 Service 添加 生命周期监听器 - Server/Service/Listener - 类名必须自己指定");
         digester.addObjectCreate("Server/Service/Listener",
                                  null, // MUST be specified in the element
                                  "className");
@@ -338,6 +346,7 @@ public class Catalina {
                             "org.apache.catalina.LifecycleListener");
 
         //Executor
+        log.info("解析XML(Server.xml) - 为 Service 添加 执行器 - Server/Service/Executor - org.apache.catalina.core.StandardThreadExecutor");
         digester.addObjectCreate("Server/Service/Executor",
                          "org.apache.catalina.core.StandardThreadExecutor",
                          "className");
@@ -347,6 +356,7 @@ public class Catalina {
                             "addExecutor",
                             "org.apache.catalina.Executor");
 
+        log.info("解析XML(Server.xml) - 为 Service 添加 链接器 - Server/Service/Connector - 使用 ConnectorCreateRule 进行初始化");
         digester.addRule("Server/Service/Connector",
                          new ConnectorCreateRule());
         digester.addRule("Server/Service/Connector",

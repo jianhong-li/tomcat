@@ -1076,6 +1076,7 @@ public class Connector extends LifecycleMBeanBase  {
     @SuppressWarnings("deprecation")
     @Override
     protected void initInternal() throws LifecycleException {
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "Connector[" + this.getClass().getName() + "].initInternal():" + " Connector 生命周期初始化 -> initInternal()");
 
         super.initInternal();
 
@@ -1108,6 +1109,7 @@ public class Connector extends LifecycleMBeanBase  {
         }
 
         try {
+            System.out.println("Connector[" + this.getClass().getName() + "].initInternal(): " + "begin to call -> protocolHandler.init()");
             protocolHandler.init();
         } catch (Exception e) {
             throw new LifecycleException(
@@ -1133,6 +1135,7 @@ public class Connector extends LifecycleMBeanBase  {
         setState(LifecycleState.STARTING);
 
         try {
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "Connector[" + this.getClass().getName() + "] start to call -> protocolHandler.start() [" + protocolHandler.getClass().getName() + "]");
             protocolHandler.start();
         } catch (Exception e) {
             throw new LifecycleException(

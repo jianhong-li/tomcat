@@ -994,6 +994,7 @@ public abstract class AbstractEndpoint<S,U> {
         internalExecutor = true;
         TaskQueue taskqueue = new TaskQueue();
         TaskThreadFactory tf = new TaskThreadFactory(getName() + "-exec-", daemon, getThreadPriority());
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "创建内部执行器.[" + getName() + "-exec-" + "],corePoolSize=" + getMinSpareThreads() + ", MaxThreads:" + getMaxThreads() + ", KeepAliveTime:60 seconds, 队列大小.无界");
         executor = new ThreadPoolExecutor(getMinSpareThreads(), getMaxThreads(), 60, TimeUnit.SECONDS,taskqueue, tf);
         taskqueue.setParent( (ThreadPoolExecutor) executor);
     }
@@ -1230,6 +1231,7 @@ public abstract class AbstractEndpoint<S,U> {
 
 
     public void init() throws Exception {
+        System.out.println("AbstractEndpoint[" + this.getClass().getName() + "].init: start to init");
         if (bindOnInit) {
             bindWithCleanup();
             bindState = BindState.BOUND_ON_INIT;
@@ -1315,6 +1317,7 @@ public abstract class AbstractEndpoint<S,U> {
         acceptor = new Acceptor<>(this);
         String threadName = getName() + "-Acceptor";
         acceptor.setThreadName(threadName);
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "AbstractEndpoint[" + this.getClass().getName() + "].startAcceptorThread() 创建 acceptor ,threadName=" + threadName);
         Thread t = new Thread(acceptor, threadName);
         t.setPriority(getAcceptorThreadPriority());
         t.setDaemon(getDaemon());
@@ -1370,12 +1373,14 @@ public abstract class AbstractEndpoint<S,U> {
     protected abstract Log getLog();
 
     protected LimitLatch initializeConnectionLatch() {
+
         if (maxConnections==-1) {
             return null;
         }
         if (connectionLimitLatch==null) {
             connectionLimitLatch = new LimitLatch(getMaxConnections());
         }
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "初始化 ConnectionLatch ....[MaxConnections=" + connectionLimitLatch.getLimit() + "]");
         return connectionLimitLatch;
     }
 

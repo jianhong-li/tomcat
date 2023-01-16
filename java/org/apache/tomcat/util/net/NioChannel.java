@@ -44,6 +44,7 @@ public class NioChannel implements ByteChannel, ScatteringByteChannel, Gathering
     protected NioSocketWrapper socketWrapper = null;
 
     public NioChannel(SocketBufferHandler bufHandler) {
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "构建NioChannel,bufHandler=" + bufHandler);
         this.bufHandler = bufHandler;
     }
 

@@ -198,6 +198,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
      */
     @Override
     public void bind() throws Exception {
+        System.out.println("NioEndpoint.bind start");
         initServerSocket();
 
         setStopLatch(new CountDownLatch(1));
@@ -219,9 +220,11 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
                 throw new IllegalArgumentException(sm.getString("endpoint.init.bind.inherited"));
             }
         } else {
+            System.out.println("NioEndpoint.initServerSocket: ServerSocketChannel.open()");
             serverSock = ServerSocketChannel.open();
             socketProperties.setProperties(serverSock.socket());
             InetSocketAddress addr = new InetSocketAddress(getAddress(), getPortWithOffset());
+            System.out.println("NioEndpoint.initServerSocket: bind address:[" + addr + "]" + ",AcceptCount:" + getAcceptCount());
             serverSock.socket().bind(addr,getAcceptCount());
         }
         serverSock.configureBlocking(true); //mimic APR behavior
@@ -233,6 +236,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
      */
     @Override
     public void startInternal() throws Exception {
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "NioEndpoint.startInternal() 准备启动NioEndpoint ...");
 
         if (!running) {
             running = true;
@@ -253,18 +257,21 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
 
             // Create worker collection
             if (getExecutor() == null) {
-                createExecutor();
+                System.out.println("[" + Thread.currentThread().getName() + "] " + "NioEndpoint 未指定 Executor, 创建默认 Executor ....");
+                createExecutor();// 启动之前,创建执行器(线程池)
             }
 
             initializeConnectionLatch();
 
             // Start poller thread
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "NioEndpoint.startInternal() 启动Poller线程[" + getName() + "-Poller" + "].....");
             poller = new Poller();
             Thread pollerThread = new Thread(poller, getName() + "-Poller");
             pollerThread.setPriority(threadPriority);
             pollerThread.setDaemon(true);
             pollerThread.start();
 
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "准备启动Acceptor线程....");
             startAcceptorThread();
         }
     }
@@ -384,13 +391,16 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
     @Override
     protected boolean setSocketOptions(SocketChannel socket) {
         NioSocketWrapper socketWrapper = null;
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "start to hand off to poller?");
         try {
             // Allocate channel and wrapper
             NioChannel channel = null;
             if (nioChannels != null) {
+                System.out.println("[" + Thread.currentThread().getName() + "] " + "尝试从nioChannels中弹出 NioChannel 实例....");
                 channel = nioChannels.pop();
             }
             if (channel == null) {
+                System.out.println("[" + Thread.currentThread().getName() + "] " + "没有缓存NioChannel.实时创建 (需要一个) SocketBufferHandler");
                 SocketBufferHandler bufhandler = new SocketBufferHandler(
                         socketProperties.getAppReadBufSize(),
                         socketProperties.getAppWriteBufSize(),
@@ -401,19 +411,24 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
                     channel = new NioChannel(bufhandler);
                 }
             }
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "wrapper(NioChannel,endpoint) --> NioSocketWrapper");
             NioSocketWrapper newWrapper = new NioSocketWrapper(channel, this);
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "Channel 复位重复利用 <----- (socket,NioSocketWrapper)");
             channel.reset(socket, newWrapper);
+
             connections.put(socket, newWrapper);
             socketWrapper = newWrapper;
 
             // Set socket properties
             // Disable blocking, polling will be used
+            System.out.println("[" + Thread.currentThread().getName() + "] " +"socket.configureBlocking(false), <-----非阻塞读");
             socket.configureBlocking(false);
             socketProperties.setProperties(socket.socket());
 
             socketWrapper.setReadTimeout(getConnectionTimeout());
             socketWrapper.setWriteTimeout(getConnectionTimeout());
             socketWrapper.setKeepAliveLeft(NioEndpoint.this.getMaxKeepAliveRequests());
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "向poller注册 NioSocketWrapper, 让poller等待读");
             poller.register(socketWrapper);
             return true;
         } catch (Throwable t) {
@@ -539,6 +554,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
         private volatile int keyCount = 0;
 
         public Poller() throws IOException {
+            System.out.println("[" + Thread.currentThread().getName() + "] " + " Selector.open() <--- 为Poller创建一个Selector");
             this.selector = Selector.open();
         }
 
@@ -608,13 +624,14 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
             for (int i = 0, size = events.size(); i < size && (pe = events.poll()) != null; i++ ) {
                 result = true;
                 NioSocketWrapper socketWrapper = pe.getSocketWrapper();
-                SocketChannel sc = socketWrapper.getSocket().getIOChannel();
+                SocketChannel sc = socketWrapper.getSocket().getIOChannel(); // 对于NioEndpoint,NioSocketWrapper中的 socket 对象是: NioChannel
                 int interestOps = pe.getInterestOps();
                 if (sc == null) {
                     log.warn(sm.getString("endpoint.nio.nullSocketChannel"));
                     socketWrapper.close();
                 } else if (interestOps == OP_REGISTER) {
                     try {
+                        System.out.println("[" + Thread.currentThread().getName() + "] " + "OP_REGISTER -> OP_READ register to selector");
                         sc.register(getSelector(), SelectionKey.OP_READ, socketWrapper);
                     } catch (Exception x) {
                         log.error(sm.getString("endpoint.nio.registerFail"), x);
@@ -646,6 +663,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
                 }
                 if (running && eventCache != null) {
                     pe.reset();
+                    System.out.println("[" + Thread.currentThread().getName() + "] " + "Put PollerEvent to Cache......");
                     eventCache.push(pe);
                 }
             }
@@ -660,6 +678,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
          */
         public void register(final NioSocketWrapper socketWrapper) {
             socketWrapper.interestOps(SelectionKey.OP_READ);//this is what OP_REGISTER turns into.
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "createPollerEvent(socketWrapper, OP_REGISTER) ---add to---> Poller.event\n");
             PollerEvent pollerEvent = createPollerEvent(socketWrapper, OP_REGISTER);
             addEvent(pollerEvent);
         }
@@ -699,6 +718,8 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
         @Override
         public void run() {
             // Loop until destroy() is called
+            System.out.println("[" + Thread.currentThread().getName() + "] " + "Poller Start to Run ,selectorTimeout=" + selectorTimeout + " .... ");
+            int logCnt = 0;
             while (true) {
 
                 boolean hasEvents = false;
@@ -712,6 +733,9 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel,SocketChannel> 
                             keyCount = selector.selectNow();
                         } else {
                             keyCount = selector.select(selectorTimeout);
+                        }
+                        if ((++logCnt) % 10 == 0) {
+                            System.out.println("[" + Thread.currentThread().getName() + "] " + "wakeupCounter.set(0);");
                         }
                         wakeupCounter.set(0);
                     }

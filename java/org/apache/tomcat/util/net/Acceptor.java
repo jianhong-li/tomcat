@@ -114,7 +114,9 @@ public class Acceptor<U> implements Runnable {
 
                 try {
                     //if we have reached max connections, wait
+                    System.out.println("[" + Thread.currentThread().getName() + "] " + "call to --> endpoint[" + this.endpoint.getClass().getName() + "].countUpOrAwaitConnection()");
                     endpoint.countUpOrAwaitConnection();
+                    System.out.println("[" + Thread.currentThread().getName() + "] " + "Got One. Ready to Accept....");
 
                     // Endpoint might have been paused while waiting for latch
                     // If that is the case, don't accept new connections
@@ -126,7 +128,9 @@ public class Acceptor<U> implements Runnable {
                     try {
                         // Accept the next incoming connection from the server
                         // socket
+                        System.out.println("[" + Thread.currentThread().getName()+"] " +"wait for http connection.....");
                         socket = endpoint.serverSocketAccept();
+                        System.out.println("[" + Thread.currentThread().getName() + "] " + "coming one connection:" + socket);
                     } catch (Exception ioe) {
                         // We didn't get a socket
                         endpoint.countDownConnection();
@@ -146,6 +150,8 @@ public class Acceptor<U> implements Runnable {
                     if (!stopCalled && !endpoint.isPaused()) {
                         // setSocketOptions() will hand the socket off to
                         // an appropriate processor if successful
+                        // 把 socket 移交给合适的 处理器(协议处理器? socket处理器?)
+                        System.out.println("[" + Thread.currentThread().getName() + "] " + "call to --> endpoint[" + endpoint.getClass().getName() + "].setSocketOptions  准备移交socket给processor");
                         if (!endpoint.setSocketOptions(socket)) {
                             endpoint.closeSocket(socket);
                         }

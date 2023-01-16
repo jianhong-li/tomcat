@@ -127,6 +127,7 @@ public abstract class LifecycleBase implements Lifecycle {
 
     @Override
     public final synchronized void init() throws LifecycleException {
+        System.out.println("LifecycleBase.init() --- [" + this.getClass().getName() + "]\n");
         if (!state.equals(LifecycleState.NEW)) {
             invalidTransition(Lifecycle.BEFORE_INIT_EVENT);
         }
@@ -169,7 +170,10 @@ public abstract class LifecycleBase implements Lifecycle {
             return;
         }
 
+        System.out.println("LifecycleBase.start() -- [" + this.getClass().getName() + "]");
+
         if (state.equals(LifecycleState.NEW)) {
+            System.out.println("init before start:  ---- [" + this.getClass().getName() + "]");
             init();
         } else if (state.equals(LifecycleState.FAILED)) {
             stop();

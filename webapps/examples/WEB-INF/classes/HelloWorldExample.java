@@ -16,6 +16,7 @@
  */
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ResourceBundle;
 
 import javax.servlet.ServletException;
@@ -40,7 +41,8 @@ public class HelloWorldExample extends HttpServlet {
     {
         ResourceBundle rb =
             ResourceBundle.getBundle("LocalStrings",request.getLocale());
-        response.setContentType("text/html");
+        // response.setContentType("text/html;charset=utf-8");
+        response.setContentType("text/html;charset=UTF-8");
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
@@ -70,6 +72,8 @@ public class HelloWorldExample extends HttpServlet {
         out.println("<img src=\"../images/return.gif\" height=24 " +
                     "width=24 align=right border=0 alt=\"return\"></a>");
         out.println("<h1>" + title + "</h1>");
+        out.println("国");
+        out.println("ni hao");
         out.println("</body>");
         out.println("</html>");
     }

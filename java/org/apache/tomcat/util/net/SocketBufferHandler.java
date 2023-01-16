@@ -51,6 +51,7 @@ public class SocketBufferHandler {
     public SocketBufferHandler(int readBufferSize, int writeBufferSize,
             boolean direct) {
         this.direct = direct;
+        System.out.println("[" + Thread.currentThread().getName() + "] " + "构建句柄:SocketBufferHandler,readBufferSize=" + readBufferSize + ", writeBufferSize=" + writeBufferSize + ", direct=" + direct);
         if (direct) {
             readBuffer = ByteBuffer.allocateDirect(readBufferSize);
             writeBuffer = ByteBuffer.allocateDirect(writeBufferSize);

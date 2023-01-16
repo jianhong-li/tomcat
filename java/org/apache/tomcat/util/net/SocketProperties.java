@@ -335,7 +335,7 @@ public class SocketProperties {
     }
 
     public int getAppReadBufSize() {
-        return appReadBufSize;
+        return appReadBufSize;//Fixme: 这可能是一个可以优化的点.
     }
 
     public int getAppWriteBufSize() {
